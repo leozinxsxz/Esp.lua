@@ -1,0 +1,147 @@
+--// BAC0NS ESP Toggle com Range Infinito e X para fechar
+
+-- Criação da GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Main = Instance.new("Frame")
+local Toggle = Instance.new("TextButton")
+local Close = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Name = "ESP_GUI"
+ScreenGui.Parent = game.CoreGui
+
+Main.Name = "Main"
+Main.Parent = ScreenGui
+Main.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Main.Position = UDim2.new(0.7, 0, 0.4, 0)
+Main.Size = UDim2.new(0, 220, 0, 90)
+
+UICorner.Parent = Main
+
+Toggle.Name = "Toggle"
+Toggle.Parent = Main
+Toggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+Toggle.Position = UDim2.new(0.07, 0, 0.3, 0)
+Toggle.Size = UDim2.new(0, 180, 0, 40)
+Toggle.Font = Enum.Font.GothamBold
+Toggle.Text = "🟢 Ativar ESP"
+Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+Toggle.TextSize = 16.000
+
+UICorner:Clone().Parent = Toggle
+
+Close.Name = "Close"
+Close.Parent = Main
+Close.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+Close.Position = UDim2.new(1, -35, 0, 5)
+Close.Size = UDim2.new(0, 25, 0, 25)
+Close.Font = Enum.Font.GothamBold
+Close.Text = "X"
+Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+Close.TextSize = 14.000
+
+UICorner:Clone().Parent = Close
+
+Close.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Variáveis
+local ESP_Ativo = false
+local Connections = {}
+
+-- Função ESP
+local function CriarESP(Player)
+    if not Player.Character then return end
+    local Box = Instance.new("Highlight")
+    Box.Name = "BAC0NS_ESP"
+    Box.Adornee = Player.Character
+    Box.FillColor = Color3.fromRGB(0, 255, 0)
+    Box.OutlineColor = Color3.fromRGB(0, 0, 0)
+    Box.FillTransparency = 0.5
+    Box.OutlineTransparency = 0
+    Box.Parent = Player.Character
+end
+
+-- Ativar ESP (Infinito)
+local function AtivarESP()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character then
+            if not player.Character:FindFirstChild("BAC0NS_ESP") then
+                CriarESP(player)
+            end
+        end
+    end
+    Connections["PlayerAdded"] = game.Players.PlayerAdded:Connect(function(plr)
+        plr.CharacterAdded:Connect(function()
+            wait(0.5)
+            CriarESP(plr)
+        end)
+    end)
+    Connections["CharacterAdded"] = game.Players.PlayerRemoving:Connect(function(plr)
+        if plr.Character and plr.Character:FindFirstChild("BAC0NS_ESP") then
+            plr.Character.BAC0NS_ESP:Destroy()
+        end
+    end)
+end
+
+-- Desativar ESP
+local function DesativarESP()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("BAC0NS_ESP") then
+            player.Character.BAC0NS_ESP:Destroy()
+        end
+    end
+    for _, conn in pairs(Connections) do
+        conn:Disconnect()
+    end
+    Connections = {}
+end
+
+-- Botão Toggle
+Toggle.MouseButton1Click:Connect(function()
+    ESP_Ativo = not ESP_Ativo
+    if ESP_Ativo then
+        Toggle.Text = "🔴 Desativar ESP"
+        AtivarESP()
+    else
+        Toggle.Text = "🟢 Ativar ESP"
+        DesativarESP()
+    end
+end)
+
+-- Sistema Drag
+local UIS = game:GetService("UserInputService")
+local frame = Main
+local dragToggle = nil
+local dragSpeed = 0.15
+local dragStart = nil
+local startPos = nil
+
+local function updateInput(input)
+	local delta = input.Position - dragStart
+	local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	frame:TweenPosition(position, "Out", "Sine", dragSpeed, true)
+end
+
+Main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragToggle = true
+		dragStart = input.Position
+		startPos = frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragToggle = false
+			end
+		end)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		if dragToggle then
+			updateInput(input)
+		end
+	end
+end)
